@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fcfcfc" />
+  <title>Semester 3 Resources</title>
+  <meta name="description" content="Search Semester 3 course notes, tutorials, practicals, and past exams." />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    try {
+      const saved = localStorage.getItem("s3-theme");
+      document.documentElement.dataset.theme = saved === "dark" ? "dark" : "light";
+    } catch {
+      document.documentElement.dataset.theme = "light";
+    }
+  </script>
+  <link rel="stylesheet" href="style.css" />
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <canvas id="library" class="library" aria-hidden="true"></canvas>
+
+  <header class="topbar">
+    <a class="brand" href="./">Semester 3</a>
+
+    <nav class="nav" aria-label="Browse by type">
+      <button class="nav-link is-active" type="button" data-type="all">Home</button>
+      <button class="nav-link" type="button" data-type="cours">Courses</button>
+      <button class="nav-link" type="button" data-type="td">Tutorials</button>
+      <button class="nav-link" type="button" data-type="tp">Practicals</button>
+      <button class="nav-link" type="button" data-type="exam">Exams</button>
+    </nav>
+
+    <button id="theme-toggle" class="pill" type="button" aria-label="Switch to dark mode">
+      <span class="tt tt-dark" aria-hidden="true">Dark mode</span>
+      <span class="tt tt-light" aria-hidden="true">Light mode</span>
+    </button>
+  </header>
+
+  <main class="stage">
+    <h1 class="title" id="page-title">
+      <span class="line gray"><span class="word" style="--d:40ms">Semester 3</span></span>
+      <span class="line"><span class="word" style="--d:140ms">Resources.</span></span>
+    </h1>
+    <p class="lede reveal" style="--d:260ms">Courses, tutorials, practicals and past exams —<br />every document, one search away.</p>
+
+    <div class="search-wrap reveal" style="--d:340ms">
+      <div class="search" role="search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input
+          id="search-input"
+          class="search-input"
+          type="search"
+          role="combobox"
+          placeholder="Search the library…"
+          autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          enterkeyhint="search"
+          spellcheck="false"
+          aria-label="Search documents"
+          aria-autocomplete="list"
+          aria-controls="search-panel"
+          aria-expanded="false"
+        />
+        <button id="search-clear" class="search-clear" type="button" aria-label="Clear search">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+        <kbd class="search-kbd" aria-hidden="true">/</kbd>
+      </div>
+
+      <div id="search-panel" class="panel" hidden>
+        <div class="filter-stack">
+          <div id="type-filters" class="filters" role="group" aria-label="Filter documents by type">
+            <button class="chip is-active" type="button" data-type="all" aria-pressed="true">All <span data-count="all">0</span></button>
+            <button class="chip" type="button" data-type="fav" aria-pressed="false">
+              <svg class="chip-star" viewBox="0 0 24 24" width="12" height="12" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.8l-5.6 2.9 1.1-6.2L3 10.1l6.2-.9z"/></svg>
+              Favorites <span data-count="fav">0</span>
+            </button>
+            <button class="chip" type="button" data-type="cours" aria-pressed="false">Courses <span data-count="cours">0</span></button>
+            <button class="chip" type="button" data-type="td" aria-pressed="false">Tutorials <span data-count="td">0</span></button>
+            <button class="chip" type="button" data-type="tp" aria-pressed="false">Practicals <span data-count="tp">0</span></button>
+            <button class="chip" type="button" data-type="exam" aria-pressed="false">Exams <span data-count="exam">0</span></button>
+          </div>
+          <div id="module-filters" class="filters filters-module" role="group" aria-label="Filter documents by module" hidden>
+            <span class="filters-label">Module</span>
+            <button class="chip chip-module is-active" type="button" data-module="all" aria-pressed="true">All</button>
+          </div>
+        </div>
+        <div id="results" class="results" role="listbox" aria-label="Matching documents"></div>
+        <div class="panel-foot">
+          <span id="results-count" aria-live="polite"></span>
+          <span class="hints"><kbd>↑</kbd><kbd>↓</kbd> navigate <kbd>↵</kbd> open <kbd>⇧</kbd><kbd>↵</kbd> star <kbd>esc</kbd> close</span>
+        </div>
+      </div>
+    </div>
+
+    <p id="notice" class="notice" role="alert" hidden></p>
+  </main>
+
+  <footer class="foot">
+    <div class="foot-left">
+      <time id="clock" class="clock" datetime="">--:--:--</time>
+      <span id="clock-date" class="clock-date"></span>
+    </div>
+
+    <p class="foot-mid">Press <kbd>/</kbd> to search</p>
+
+    <figure class="quote" id="quote" title="Click for the next quote">
+      <blockquote id="quote-text" class="quote-text"></blockquote>
+      <span class="quote-bar" aria-hidden="true"><span id="quote-fill" class="quote-fill"></span></span>
+    </figure>
+  </footer>
+</body>
+</html>
