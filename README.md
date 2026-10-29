@@ -13,7 +13,7 @@ An open-source, high-performance PDF search engine built for university students
 - **Favorites System:** Star your most-used PDFs to save them locally on your device. No account or login required.
 - **Direct Download:** Download PDFs with a single click.
 - **Dark / Light Mode:** A beautifully animated theme toggle with a circular reveal effect.
-- **Premium UI:** Editorial, monochrome design with a dynamic background that reacts to your cursor.
+- **Premium UI:** Editorial, library design with a dynamic background that reacts to your cursor.
 - **100% Free & Open Source:** No ads, no tracking, no paywalls.
 
 ---
