@@ -1,9 +1,9 @@
 [
   { "title": "Algorithm 3 - Full Book", "type": "cours", "module": "algo", "filename": "Book.pdf" },
   { "title": "Algorithm 3 - Global Course", "type": "cours", "module": "algo", "filename": "Courses.pdf" },
-  { "title": "Chapter 2 — Linked Lists", "type": "cours", "module": "algo", "filename": "Chapter 2 [Linked Lists].pdf" },
-  { "title": "Chapter 3 — Stacks & Queues", "type": "cours", "module": "algo", "filename": "Chapter 3 [Stacks & Queues].pdf" },
-  { "title": "Chapter 4 — Trees & Graphs", "type": "cours", "module": "algo", "filename": "Chapter 4 [Trees & Graphs].pdf" },
+  { "title": "Chapter 2 — Linked Lists", "type": "cours", "module": "algo", "filename": "Chapter 2 (Linked Lists).pdf" },
+  { "title": "Chapter 3 — Stacks & Queues", "type": "cours", "module": "algo", "filename": "Chapter 3 (Stacks & Queues).pdf" },
+  { "title": "Chapter 4 — Trees & Graphs", "type": "cours", "module": "algo", "filename": "Chapter 4 (Trees & Graphs).pdf" },
   { "title": "TD 1 - Série 1", "type": "td", "module": "algo", "filename": "Serie 1.pdf" },
   { "title": "TD 2 - Série 2", "type": "td", "module": "algo", "filename": "Serie 2.pdf" },
   { "title": "TD 3 - Série 3", "type": "td", "module": "algo", "filename": "Serie 3.pdf" },
