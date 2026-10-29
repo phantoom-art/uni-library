@@ -2,8 +2,7 @@
 
 /* ───────── Config ───────── */
 const DATA_URL = "./unipdfs.json";
-// Paste your Cloudflare Worker URL here to list the R2 bucket automatically,
-// e.g. "https://s3-library.yourname.workers.dev". Leave empty to use unipdfs.json only.
+// Paste your Cloudflare Worker URL here to list the R2 bucket automatically, to keep uploading more pdfs
 const API_URL = "";
 const FAV_KEY = "s3-favorites";
 
@@ -37,7 +36,7 @@ const navLinks = [...document.querySelectorAll(".nav-link")];
 let documents = [];
 let visibleDocs = [];
 let activeType = "all";   // all | fav | cours | td | tp | exam
-let activeModule = "all"; // all | algo | archi | asd | …
+let activeModule = "all"; // all | algo | archi | asd | etc
 let items = [];
 let activeIndex = -1;
 let isOpen = false;
