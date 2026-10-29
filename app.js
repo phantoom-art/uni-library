@@ -647,7 +647,7 @@ for (const link of navLinks) {
 /* ───────── Changing inspirational quotes ───────── */
 const QUOTES = [
   "Drink water",
-  "Touch grass"
+  "Touch grass",
   "Small steps, taken daily, beat big plans left for tomorrow.",
   "Debug your doubts the same way you debug your code: one step at a time.",
   "Today's confusing chapter is next month's easy exercise.",
