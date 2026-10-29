@@ -688,8 +688,348 @@ quoteBox.style.setProperty("--quote-time", `${QUOTE_MS}ms`);
 quoteBox.addEventListener("click", () => showQuote());
 showQuote(false);
 
-/* ───────── Background Library (Keep your existing code) ───────── */
-/* (Your canvas library script goes here) */
+/* ───────── Background: a huge library, lit by your cursor ───────── */
+(() => {
+  const canvas = document.querySelector("#library");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+
+  const scene = document.createElement("canvas");
+  const lit = document.createElement("canvas");
+  const mask = document.createElement("canvas");
+  const sctx = scene.getContext("2d");
+  const lctx = lit.getContext("2d");
+  const mctx = mask.getContext("2d");
+
+  const MASK_SCALE = 0.25;
+  const LIGHT = {
+    light: { ambient: 0.05, reveal: 0.6 },
+    dark: { ambient: 0.07, reveal: 0.68 },
+  };
+  const PALETTE = {
+    light: {
+      plank: "#3a3a40", shadow: "rgba(0,0,0,0.16)", hi: "rgba(255,255,255,0.4)", shade: "rgba(0,0,0,0.22)",
+      label: "rgba(255,255,255,0.55)", inkSoft: "rgba(0,0,0,0.35)",
+      spines: ["#2a2a30", "#44444c", "#5f5f68", "#7a7a84", "#9a9aa3", "#b9b9c1", "#6b7fa8", "#a88b6b", "#6b9a7c", "#9c7aa8"],
+      paper: "#ffffff", edge: "#a9a9b3", fold: "#dcdce2", line: "#c4c4cc", ink: "#7d7d88", pdf: "#c0504d",
+    },
+    dark: {
+      plank: "#c9c9d2", shadow: "rgba(0,0,0,0.4)", hi: "rgba(255,255,255,0.26)", shade: "rgba(0,0,0,0.3)",
+      label: "rgba(255,255,255,0.3)", inkSoft: "rgba(0,0,0,0.45)",
+      spines: ["#e4e4ea", "#c2c2cc", "#a0a0ac", "#80808c", "#60606c", "#454550", "#8da2cf", "#cfae8d", "#8dc4a0", "#bf9dcc"],
+      paper: "#ececf1", edge: "#8a8a95", fold: "#b7b7c2", line: "#b4b4be", ink: "#8d8d99", pdf: "#e0645f",
+    },
+  };
+
+  let w = 0, h = 0, ds = 1, R = 160, phone = false, dark = false;
+  let tx = -9999, ty = -9999;
+  let sx = -9999, sy = -9999;
+  let lastInput = -1e9, live = 0, cleared = true, last = 0, raf = 0, resizeTimer = 0;
+  let ang = 0, stretch = 1, lobe = 0;
+
+  function mulberry(seed) {
+    return () => {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function drawScene() {
+    const P = dark ? PALETTE.dark : PALETTE.light;
+    const g = sctx;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, scene.width, scene.height);
+    g.setTransform(ds, 0, 0, ds, 0, 0);
+
+    const rand = mulberry(20261029);
+    const r = (a, b) => a + rand() * (b - a);
+    const pick = (arr) => arr[(rand() * arr.length) | 0];
+
+    const u = Math.max(90, Math.min(150, h / 6.5));
+    const k = u / 120;
+    const rows = Math.ceil(h / u);
+    const y0 = (h - rows * u) / 2;
+    const section = Math.max(240, w / 4);
+
+    for (let row = 0; row < rows; row++) {
+      const baseY = y0 + (row + 1) * u;
+      g.fillStyle = P.plank; g.fillRect(0, baseY - 3, w, 5);
+      g.fillStyle = P.shadow; g.fillRect(0, baseY + 2, w, 3);
+
+      let x = 4 + r(0, 10);
+      let nextPost = section * (0.4 + r(0, 0.3));
+      while (x < w) {
+        if (x >= nextPost) {
+          g.fillStyle = P.plank; g.fillRect(x, baseY - u + 6, 6, u - 9);
+          x += 12; nextPost += section * (0.9 + r(0, 0.2));
+          continue;
+        }
+        const roll = rand();
+        if (roll < 0.06) { x += r(18, 50) * k; continue; }
+        if (roll < 0.14) {
+          const n = 2 + ((rand() * 3) | 0), sw = r(56, 90) * k;
+          let yy = baseY - 3;
+          for (let i = 0; i < n; i++) {
+            const sh = r(9, 15) * k, ox = r(-4, 4) * k;
+            yy -= sh;
+            g.fillStyle = pick(P.spines); g.fillRect(x + ox, yy, sw, sh - 1);
+            g.fillStyle = P.hi; g.fillRect(x + ox + sw * 0.15, yy + sh * 0.35, sw * 0.6, 1.2);
+          }
+          x += sw + 6 * k;
+          continue;
+        }
+        const bw = r(9, 24) * k, bh = u * r(0.56, 0.9), by = baseY - 3 - bh;
+        const lean = rand() < 0.05;
+        g.save();
+        if (lean) {
+          g.translate(x + bw, baseY - 3); g.rotate(-r(0.18, 0.32)); g.translate(-(x + bw), -(baseY - 3));
+        }
+        g.fillStyle = pick(P.spines); g.fillRect(x, by, bw, bh);
+        g.fillStyle = P.hi; g.fillRect(x, by + bh * 0.12, bw, 2 * k); g.fillRect(x, baseY - 3 - bh * 0.14, bw, 2 * k);
+        if (bw > 12 * k) {
+          g.fillStyle = P.label; g.fillRect(x + bw * 0.2, by + bh * 0.18, bw * 0.6, bh * 0.26);
+          g.fillStyle = P.inkSoft; g.fillRect(x + bw * 0.3, by + bh * 0.28, bw * 0.4, 1.2);
+        }
+        g.fillStyle = P.shade; g.fillRect(x + bw - 2 * k, by, 2 * k, bh);
+        g.restore();
+        x += bw + (lean ? 12 * k : 0.6);
+      }
+    }
+
+    function sheet(cx, cy, pw, rot, detail, pdf, kind) {
+      const ph = pw * 1.38, m = pw * 0.12, lh = Math.max(1.6, pw * 0.034);
+      g.save();
+      g.translate(cx, cy); g.rotate(rot);
+      g.fillStyle = P.shadow; g.fillRect(-pw / 2 + 3, -ph / 2 + 4, pw, ph);
+      g.fillStyle = P.paper; g.fillRect(-pw / 2, -ph / 2, pw, ph);
+      g.strokeStyle = P.edge; g.lineWidth = 1; g.strokeRect(-pw / 2 + 0.5, -ph / 2 + 0.5, pw - 1, ph - 1);
+      if (detail) {
+        const f = pw * 0.2;
+        g.fillStyle = P.fold; g.beginPath();
+        g.moveTo(pw / 2 - f, -ph / 2); g.lineTo(pw / 2, -ph / 2 + f); g.lineTo(pw / 2 - f, -ph / 2 + f); g.closePath(); g.fill();
+        let y = -ph / 2 + m;
+        if (pdf) {
+          g.fillStyle = P.pdf; g.fillRect(-pw / 2 + m, y, pw * 0.34, pw * 0.15);
+          g.fillStyle = "#fff"; g.font = `700 ${pw * 0.1}px Helvetica, Arial, sans-serif`; g.textBaseline = "middle";
+          g.fillText("PDF", -pw / 2 + m + pw * 0.045, y + pw * 0.077);
+          y += pw * 0.26;
+        } else {
+          g.fillStyle = P.ink; g.fillRect(-pw / 2 + m, y, pw * 0.5, lh * 1.6);
+          y += lh * 4;
+        }
+        const innerW = pw - 2 * m, bottom = ph / 2 - m;
+        if (kind === 1) {
+          const area = ph * 0.3, bw = innerW / 7;
+          g.fillStyle = P.line; g.fillRect(-pw / 2 + m, y + area, innerW, 1);
+          for (let i = 0; i < 5; i++) {
+            const bh2 = area * r(0.25, 1);
+            g.fillStyle = i % 2 ? P.line : P.ink;
+            g.fillRect(-pw / 2 + m + bw * (i * 1.3 + 0.2), y + area - bh2, bw, bh2);
+          }
+          y += area + lh * 3;
+        } else if (kind === 2) {
+          const rowsN = 5, rh = ph * 0.05;
+          g.fillStyle = P.line;
+          for (let i = 0; i <= rowsN; i++) g.fillRect(-pw / 2 + m, y + i * rh, innerW, 1);
+          for (let i = 0; i <= 3; i++) g.fillRect(-pw / 2 + m + (innerW / 3) * i, y, 1, rowsN * rh);
+          y += rowsN * rh + lh * 3;
+        }
+        g.fillStyle = P.line;
+        for (let ly = y; ly < bottom - lh; ly += lh * 2.7) g.fillRect(-pw / 2 + m, ly, innerW * r(0.55, 1), lh);
+      }
+      g.restore();
+    }
+
+    const count = Math.max(14, Math.min(46, Math.round((w * h) / 36000)));
+    for (let i = 0; i < count; i++) {
+      sheet(r(0.02, 0.98) * w, r(0.05, 0.95) * h, r(48, 84) * k * 1.15, r(-0.55, 0.55), true, rand() < 0.42, (rand() * 3) | 0);
+    }
+    const stacks = Math.max(4, Math.round(count / 6));
+    for (let s = 0; s < stacks; s++) {
+      const cx = r(0.05, 0.95) * w, cy = r(0.1, 0.9) * h, pw = r(58, 80) * k * 1.1, rot = r(-0.3, 0.3);
+      const n = 4 + ((rand() * 4) | 0);
+      for (let i = 0; i < n; i++) sheet(cx + r(-3, 3), cy - i * 2.6, pw, rot + r(-0.07, 0.07), i === n - 1, false, 0);
+    }
+
+    g.globalCompositeOperation = "destination-out";
+    g.save();
+    if (phone) { g.translate(w / 2, h * 0.3); g.scale(w * 0.75, h * 0.2); }
+    else { g.translate(w / 2, h * 0.46); g.scale(w * 0.34, h * 0.34); }
+    const cg = g.createRadialGradient(0, 0, 0.1, 0, 0, 1);
+    cg.addColorStop(0, "rgba(0,0,0,0.9)"); cg.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = cg; g.fillRect(-1.2, -1.2, 2.4, 2.4);
+    g.restore();
+    const tg = g.createLinearGradient(0, 0, 0, 90);
+    tg.addColorStop(0, "rgba(0,0,0,0.7)"); tg.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = tg; g.fillRect(0, 0, w, 90);
+    const bg = g.createLinearGradient(0, h - 110, 0, h);
+    bg.addColorStop(0, "rgba(0,0,0,0)"); bg.addColorStop(1, "rgba(0,0,0,0.7)");
+    g.fillStyle = bg; g.fillRect(0, h - 110, w, 110);
+    g.globalCompositeOperation = "source-over";
+  }
+
+  function stamp(x, y) {
+    const rr = R * MASK_SCALE;
+    mctx.save();
+    mctx.translate(x * MASK_SCALE, y * MASK_SCALE);
+    mctx.rotate(ang);
+    mctx.scale(stretch, 1 / Math.sqrt(stretch));
+    const lobes = [
+      [0, 0, 1, 1],
+      [0.34 * Math.cos(lobe), 0.26 * Math.sin(lobe * 1.3), 0.72, 0.7],
+      [-0.3 * Math.cos(lobe * 0.8), -0.28 * Math.sin(lobe), 0.6, 0.55],
+    ];
+    for (const [ox, oy, rad, k] of lobes) {
+      const cx = ox * rr, cy = oy * rr, r2 = rr * rad;
+      const gr = mctx.createRadialGradient(cx, cy, 0, cx, cy, r2);
+      gr.addColorStop(0, `rgba(0,0,0,${0.5 * k})`);
+      gr.addColorStop(0.5, `rgba(0,0,0,${0.28 * k})`);
+      gr.addColorStop(1, "rgba(0,0,0,0)");
+      mctx.fillStyle = gr;
+      mctx.fillRect(cx - r2, cy - r2, r2 * 2, r2 * 2);
+    }
+    mctx.restore();
+  }
+
+  function composite(level) {
+    const L = dark ? LIGHT.dark : LIGHT.light;
+    lctx.globalCompositeOperation = "source-over";
+    lctx.clearRect(0, 0, lit.width, lit.height);
+    lctx.drawImage(scene, 0, 0);
+    lctx.globalCompositeOperation = "destination-in";
+    lctx.drawImage(mask, 0, 0, lit.width, lit.height);
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = L.ambient;
+    ctx.drawImage(scene, 0, 0);
+    ctx.globalAlpha = L.reveal;
+    ctx.drawImage(lit, 0, 0);
+    ctx.globalAlpha = 1;
+
+    if (level > 0 && sx > -5000) {
+      ctx.setTransform(ds, 0, 0, ds, 0, 0);
+      ctx.globalCompositeOperation = dark ? "lighter" : "source-over";
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(ang);
+      ctx.scale(stretch, 1 / Math.sqrt(stretch));
+      const flicker = 1 + 0.035 * Math.sin(lobe * 7);
+      const a0 = (dark ? 0.1 : 0.12) * level, a1 = (dark ? 0.045 : 0.055) * level;
+      const lobes = [
+        [0.08 * Math.cos(lobe * 0.6), 0.06 * Math.sin(lobe * 0.9), 1.5, 1],
+        [0.38 * Math.cos(lobe), 0.28 * Math.sin(lobe * 1.3), 1.05, 0.8],
+        [-0.34 * Math.cos(lobe * 0.8), -0.32 * Math.sin(lobe), 0.85, 0.6],
+      ];
+      for (const [ox, oy, rad, k] of lobes) {
+        const cx = ox * R, cy = oy * R, rr = R * rad * flicker;
+        const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, rr);
+        gr.addColorStop(0, `rgba(255, ${dark ? 214 : 200}, ${dark ? 150 : 100}, ${a0 * 0.8 * k})`);
+        gr.addColorStop(0.3, `rgba(255, ${dark ? 206 : 196}, ${dark ? 140 : 100}, ${a0 * 0.8 * k})`);
+        gr.addColorStop(0.7, `rgba(255, 190, 110, ${a1 * k})`);
+        gr.addColorStop(1, "rgba(255, 190, 110, 0)");
+        ctx.fillStyle = gr;
+        ctx.fillRect(cx - rr, cy - rr, rr * 2, rr * 2);
+      }
+      ctx.restore();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+  }
+
+  function frame(t) {
+    raf = requestAnimationFrame(frame);
+    if (document.hidden || themeSwitching || isOpen) return;
+    if (t - last < 22) return;
+    last = t;
+    lobe = t * 0.0007;
+
+    const idle = t - lastInput;
+    let gx = tx, gy = ty, active = idle < 3500 && tx > -5000;
+    if (!reduce && coarse && idle > 1200) {
+      gx = w * (0.5 + 0.38 * Math.sin(t * 0.00031));
+      gy = h * (0.5 + 0.34 * Math.sin(t * 0.00047 + 1.3));
+      active = true;
+    }
+
+    if (!active && live <= 0) {
+      if (!cleared) { mctx.clearRect(0, 0, mask.width, mask.height); composite(0); cleared = true; }
+      return;
+    }
+
+    mctx.globalCompositeOperation = "destination-out";
+    mctx.fillStyle = `rgba(0,0,0,${reduce ? 0.2 : 0.045})`;
+    mctx.fillRect(0, 0, mask.width, mask.height);
+    mctx.globalCompositeOperation = "source-over";
+
+    if (active) {
+      cleared = false;
+      live = 100;
+      if (sx < -5000) { sx = gx; sy = gy; }
+      const ox = sx, oy = sy, ease = reduce ? 1 : 0.2;
+      sx += (gx - sx) * ease;
+      sy += (gy - sy) * ease;
+      const speed = Math.hypot(sx - ox, sy - oy);
+      if (speed > 0.4) {
+        let d = Math.atan2(sy - oy, sx - ox) - ang;
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        ang += d * 0.25;
+      }
+      stretch += ((1 + Math.min(0.45, speed / 35)) - stretch) * 0.2;
+      const steps = Math.max(1, Math.ceil(Math.hypot(sx - ox, sy - oy) / (R * 0.3)));
+      for (let i = 1; i <= steps; i++) stamp(ox + ((sx - ox) * i) / steps, oy + ((sy - oy) * i) / steps);
+    } else {
+      live--;
+      stretch += (1 - stretch) * 0.1;
+    }
+    composite(Math.min(1, live / 40));
+  }
+
+  function resize() {
+    ds = Math.min(window.devicePixelRatio || 1, 1.5);
+    w = window.innerWidth;
+    h = window.innerHeight;
+    phone = w < 760;
+    R = Math.max(110, Math.min(230, Math.min(w, h) * 0.24));
+    for (const c of [canvas, scene, lit]) { c.width = Math.round(w * ds); c.height = Math.round(h * ds); }
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    mask.width = Math.ceil(w * MASK_SCALE);
+    mask.height = Math.ceil(h * MASK_SCALE);
+    dark = document.documentElement.dataset.theme === "dark";
+    drawScene();
+    composite(live > 0 ? Math.min(1, live / 40) : 0);
+  }
+
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (window.innerWidth === w && Math.abs(window.innerHeight - h) < 150) return;
+      resize();
+    }, 120);
+  });
+
+  new MutationObserver(() => {
+    dark = document.documentElement.dataset.theme === "dark";
+    drawScene();
+    composite(live > 0 ? Math.min(1, live / 40) : 0);
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  const onPointer = (e) => {
+    tx = e.clientX;
+    ty = e.clientY;
+    lastInput = performance.now();
+  };
+  window.addEventListener("pointermove", onPointer, { passive: true });
+  window.addEventListener("pointerdown", onPointer, { passive: true });
+
+  resize();
+  raf = requestAnimationFrame(frame);
+})();
 
 /* ───────── Live clock ───────── */
 const clockEl = document.querySelector("#clock");
