@@ -8,12 +8,14 @@ const FAV_KEY = "s3-favorites";
 const VALID_TYPES = new Set(["cours", "td", "tp", "exam"]);
 const TYPE_LABELS = { cours: "Course", td: "Tutorial", tp: "Practical", exam: "Exam" };
 const TYPE_SHORT = { cours: "CRS", td: "TD", tp: "TP", exam: "EXM" };
-const MODULE_LABELS = {
-  archi: "Architecture",
-  asd: "ASD3",
-  mn: "Numerical Methods",
-  si: "Information Systems",
-  other: "Other"
+
+// Algorithm is removed from the labels and order
+const MODULE_LABELS = { 
+  archi: "Architecture", 
+  asd: "ASD", 
+  mn: "Numerical Methods", 
+  si: "Information Systems", 
+  other: "Other" 
 };
 const MODULE_ORDER = ["archi", "asd", "mn", "si"];
 const MAX_RESULTS = 60;
