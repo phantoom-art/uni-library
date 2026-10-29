@@ -1,4 +1,4 @@
-/* ═════════ Monochrome editorial — fast, smooth, fully responsive ═════════ */
+/* ═════════ library — fast, smooth, fully responsive ═════════ */
 
 :root {
   color-scheme: light;
@@ -416,7 +416,7 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; a
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2; }
 
-/* ───────── Hover only on devices that really hover (no sticky hover on phones) ───────── */
+/* ───────── Hover only on devices that really hover (no sticky hover on phones - tablets) ───────── */
 @media (hover: hover) {
   .nav-link:hover { opacity: 1; }
   .nav-link:hover::after { transform: scaleX(1); }
